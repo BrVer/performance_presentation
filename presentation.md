@@ -1,18 +1,20 @@
-# Performance problems and how to fix them
+# Performance practices
 
 ![main_image](main_image.jpg)
 
+**There's a specific set of practices, which will help you to eliminate most of the performance problems**
+
 ## Agenda
-**Part 1:**
+**Part 1: practices**
 - Pagination
-- N+1 and how to avoid them
+- Avoiding N+1
 - Caching (service level, request level, Redis, conditional Get)
-- stupid logic problems
+- Avoiding stupid logic problems
 - Preliminary work (aggregating some data to DB, pre-filling cache)
-- Too long requests to Database (e.g. Use index, Luke!)
+- Dealing with Too long DB queries (e.g. Use index, Luke!)
 -------
-**Part 2:**
-- how to avoid such problems
+**Part 2: general tips**
+- how to catch performance problems at the place
 - when to optimize
 - flamegraph
 
@@ -20,11 +22,9 @@
 
 ![gateway_timeout](1_pagination/gateway_timeout.png)
 
-## 2. Excessive(Stupid) work
+## 2 Avoiding N+1 requests
 
-### 2.1 N+1 requests
-
-#### Problem:
+### Problem:
 
 ```ruby
 clients = Client.limit(10)
@@ -49,7 +49,19 @@ SELECT addresses.* FROM addresses  WHERE (addresses.client_id = 9);
 SELECT addresses.* FROM addresses  WHERE (addresses.client_id = 10);
 ```
 
-#### Solution:
+### It doesn't seem scary...
+but with time, you end with:
+
+
+```ruby
+hash = {}
+BulkUpload::File.all.each {|f| hash[f.id] = f.file_content.content.length}
+```
+=>
+![n_plus_1_big_problem](2_n_plus_one/n_plus_1_big_problem.png)
+
+
+### Solution:
 
 ```ruby
 clients = Client.includes(:address).limit(10)
@@ -65,15 +77,7 @@ SELECT addresses.* FROM addresses
   WHERE (addresses.client_id IN (1,2,3,4,5,6,7,8,9,10));
 ```
 
-it doesn't seem scary, but with time, you end with:
-
-```ruby
-hash = {}
-BulkUpload::File.all.each {|f| hash[f.id] = f.file_content.content.length}
-```
-=>
-![n_plus_1_big_problem](2_n_plus_one/n_plus_1_big_problem.png)
-#### another example:
+### Result:
 
 ![includes_vs_joins_1](2_n_plus_one/includes_vs_joins_1.png)
 (it's not all the page)
@@ -85,7 +89,7 @@ result:
 ![includes_vs_joins_3](2_n_plus_one/includes_vs_joins_3.png)
 ![includes_vs_joins_4](2_n_plus_one/includes_vs_joins_4.png)
 
-#### How to fix:
+### How to not forget:
 For ruby : https://github.com/flyerhzm/bullet
 
 configuration:
@@ -116,9 +120,11 @@ end
 
 **!!!** I'm sure something similar is already implemented for your language
 
-### 2.2 No Caching
+## 3 Caching
 
-#### 2.2.1 Simple caching service, memoisation
+### 3.1 Simple caching service, memoisation
+
+#### Problem:
 ```ruby
 def fibonacci(n)
    n <= 1 ? n :  fibonacci( n - 1 ) + fibonacci( n - 2 ) 
@@ -128,7 +134,7 @@ end
 ```
 (Yes, it's slow Ruby, but it will hang on every lang with big number)
 
-**solution:**
+#### Solution:
 ```ruby
 class FibonacciCaching
   attr_reader :cached_values
@@ -138,12 +144,12 @@ class FibonacciCaching
 
   def get(n)
     return cached_values[n] if n < 2
-    cached_values[n] ||= cached_values[n-1] + cached_values[n-2]
+    cached_values[n] ||= get(n-1) + get(n-2)
   end
 end
 ```
 
-**results:**
+#### results:
 ```ruby
 require 'benchmark'
 
@@ -160,12 +166,12 @@ end
 #  0.140000   0.020000   0.160000 (  0.166776) 
 ```
 
-#### 2.2.2 Caching something for the whole request
+### 3.2 Caching something for the whole request
 
 for ruby: https://github.com/steveklabnik/request_store
 
 
-#### 2.2.3 Redis (one love)
+### 3.3 Redis (one love)
 ```ruby
 class Product < ApplicationRecord
   def competing_price
@@ -177,7 +183,7 @@ end
 
 ```
 
-#### 2.2.4 Conditional GET (HTTP `ETag` and `If-None-Match` headers)
+### 3.4 Conditional GET (HTTP `ETag` and `If-None-Match` headers)
 ! doesn't work together with previous example
 
 ```ruby
@@ -198,7 +204,7 @@ class ProductsController < ApplicationController
 end
 ```
 
-### 2.3 Problems with logic
+### 4 Keep in mind the whole picture (Avoiding stupid logic problems)
 
 Example:
 - service_1 process up to 50k transfers
@@ -207,24 +213,24 @@ Example:
 -------------
 how to implement?
 
-## 3. Preliminary work
-- save to database
-- save to cache
+## 5. Preliminary work
+- save to database (aggregating some data)
+- save to cache (pre-filling)
 
-## 4. Database
+## 6. Dealing with Too long requests to Database (e.g. Use index, Luke!)
 EXPLAIN ANALYZE - your best friend
 - Understand difference between INDEX FULL SCAN / INDEX UNIQUE SCAN / TABLE SCAN etc.
 - Understand what index types does your DB support (not only B-tree exist, for example indexes for geo  data (lat/long))
 - Check indexes on all heavy queries fields used in `where`, `on`, `group by`
 
-## 5. How to understand, what to optimize and what to not
+## 7. General tips
 
-### 5.1 Amount of data
-always test with the amount of data compared to how much you'll have on prod
+### 7.1 Amount of data
+Always test with the amount of data compared to how much you'll have on prod
  - fill DB with scripts generating fake data
  - upload big files
 
-### 5.2 Profiling and optimisation
+### 7.2 Profiling and optimisation
 You MUST do profiling before doing optimisation, to be sure you're not just wasting time,
 Unless you're sure in advance it's 100% required in this particular place (comes with years of work experience)
 
@@ -233,17 +239,17 @@ profiling:
 - something like Flamegraph (good for local debugging, open-source)
 
 
-### 5.3 Flamegraph
+### 8 Flamegraph
 
-#### 5.3.1. problem:
+#### 8.1. problem:
 this is a stacktrace of profiling some bash script:
 ![cpu-bash-profile-1800](flamegraph/cpu-bash-profile-1800.jpg)
 
-#### 5.3.2. solution:
+#### 8.2. solution:
 now it's much better (when you understand how to interprete it):
 ![cpu-bash-flamegraph](flamegraph/cpu-bash-flamegraph.png)
 
-#### 5.3.3 How it works:
+#### 8.3 How it works:
 https://www.slideshare.net/brendangregg/blazing-performance-with-flame-graphs
 
 It visualises a collection of stacktraces
