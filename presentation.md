@@ -55,7 +55,9 @@ but with time, you end with:
 
 ```ruby
 hash = {}
-BulkUpload::File.all.each {|f| hash[f.id] = f.file_content.content.length}
+BulkUpload::File.all.each do |f|
+  hash[f.id] = f.file_content.content.length
+end
 ```
 =>
 ![n_plus_1_big_problem](2_n_plus_one/n_plus_1_big_problem.png)
