@@ -238,25 +238,4 @@ Unless you're sure in advance it's 100% required in this particular place (comes
 
 profiling:
 - Datadog/newRelic (good for production, costly)
-- something like Flamegraph (good for local debugging, open-source)
-
-
-### 8 Flamegraph
-
-#### 8.1. problem:
-this is a stacktrace of profiling some bash script:
-![cpu-bash-profile-1800](flamegraph/cpu-bash-profile-1800.jpg)
-
-#### 8.2. solution:
-now it's much better (when you understand how to interprete it):
-![cpu-bash-flamegraph](flamegraph/cpu-bash-flamegraph.png)
-
-#### 8.3 How it works:
-https://www.slideshare.net/brendangregg/blazing-performance-with-flame-graphs
-
-It visualises a collection of stacktraces
-- **X axis:** alphabetical sort **(!!!NOT TIME, THIS IS VERY IMPORTANT !!!)**, to maximize merging
-- **Y axis:** stack depth
-- **colors:** random
-
-![flamegraph_simple_example](flamegraph/simple_example.png)
+- something like Flamegraph (good for local debugging, open-source - see my next presentation)
