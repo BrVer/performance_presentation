@@ -1,0 +1,13 @@
+context:
+
+initiated transfer — signinig —> signed transfer
+
+problem:
+takes too long for transfer_batches with big amount of transfers
+
+but signing only attaches 1 signature to the batch..
+
+code:
+
+https://gist.github.com/BrVer/7be242e3836c4bb778c7cb4852371cbf
+

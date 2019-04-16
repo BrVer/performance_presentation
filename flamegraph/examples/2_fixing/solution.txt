@@ -1,0 +1,38 @@
+https://github.fidor.de/vl/transfer_cart/pull/495/files#diff-d963adfa891cf2ce40b14feda0f128f3
+
+was:
+
+  	transfers_bics_map = {
+      1     => 'bic1',
+      2     => 'bic2',
+      3     => `bic19',
+      # ...
+      # ...
+      # ...
+      49998 => 'bic3',
+      49999 => 'bic1',
+      50000 => 'bic20'
+    }
+
+    transfers_bics_map.each do |id, new_bic|
+      BulkUpload::Transfer.find(id).update!(remote_bic: new_bic) # 50k requests
+    end
+
+
+now:
+
+    transfers_bics_map = {
+      'bic1' => [1, ..., 49999],
+      'bic2' => [2, ...],
+      'bic3' => [..., 4998],
+       # ...
+       # ...
+       # ...
+      'bic19' => [3, ...],
+      'bic20' => [..., 5000],
+    }
+
+    transfers_bics_map.each do |bic, transfer_ids|
+      BulkUpload::Transfer.where(id: transfer_ids).update_all(remote_bic: bic) # 20 requests
+    end
+

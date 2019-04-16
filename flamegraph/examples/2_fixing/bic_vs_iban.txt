@@ -1,0 +1,9 @@
+BIC
+A BIC (Bank Identifier Code) is the SWIFT Address assigned to a bank in order to send automated payments quickly and accurately to the banks concerned. It uniquely identifies the name and country, (and sometimes the branch) of the bank involved. BICs are often called SWIFT Codes and can be either 8 or 11 characters long.
+
+Bank of Ireland’s BIC is BOFIIE2D
+
+IBAN
+An IBAN (International Bank Account Number) is an international bank account identifier used to uniquely identify the account of a customer at a financial institution. This is the only permissible account identifier for SEPA payments. It is important to remember that IBAN is not a new account number but simply a new format for an existing account number which is recognised internationally.
+
+An example of an Irish IBAN, which contains your existing NSC & Account Number is: IE64BOFI90583812345678
